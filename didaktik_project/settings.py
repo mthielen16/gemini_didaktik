@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-0hw7f^@@()7+sfkjy&@+(w8%g&1a!c()8i^ptmm-8(33cau8oh'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['46.101.159.176', 'localhost', '127.0.0.1']
 
@@ -116,3 +116,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Wohin nach dem Login? (Zurück zu unserer App)
+LOGIN_REDIRECT_URL = '/test/'
+# Wohin nach dem Logout? (Zurück zum Login-Bildschirm)
+LOGOUT_REDIRECT_URL = 'login'
+# Wo liegt die Login-Seite?
+LOGIN_URL = 'login'

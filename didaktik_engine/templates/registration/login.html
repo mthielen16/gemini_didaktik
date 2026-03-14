@@ -1,0 +1,14 @@
+{% extends "base.html" %} <div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card p-4 shadow">
+                <h3 class="text-center mb-4">Dobbi Login</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary w-100">Anmelden</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
