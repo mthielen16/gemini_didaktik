@@ -2,9 +2,10 @@ import os
 from django.shortcuts import render
 from google import genai
 from dotenv import load_dotenv
+from django.contrib.auth.decorators import login_required
 
 load_dotenv()
-
+@login_required
 def ki_test_view(request):
     result = None
     if request.method == 'POST':
