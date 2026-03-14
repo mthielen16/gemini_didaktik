@@ -1,3 +1,6 @@
+
+
+
 import os
 from django.shortcuts import render
 from google import genai
@@ -7,15 +10,26 @@ from django.contrib.auth.decorators import login_required
 load_dotenv()
 @login_required
 def ki_test_view(request):
+    # Session-Speicher für den Chat vorbereiten
+    if 'chat_history' not in request.session:
+        request.session['chat_history'] = []
+    
     result = None
+    display_history = request.session['chat_history']
+
     if request.method == 'POST':
-        user_text = request.POST.get('user_input', '')
-        
+        # Neustart-Knopf Logik
+        if 'reset' in request.POST:
+            request.session['chat_history'] = []
+            request.session.modified = True
+            return render(request, 'didaktik_engine/index.html', {'result': None, 'full_history': []})
+
+        user_input = request.POST.get('user_input', '')
         api_key = os.getenv("GEMINI_API_KEY")
         client = genai.Client(api_key=api_key)
 
-        # Dein Experten-Prompt
-        prompt_content = f"""Du bist „Dobbi“, ein sachlicher, professionell-neutraler und streng kriteriengeleiteter didaktischer Gutachter für Lernsituationen an Berufskollegs. 
+        # Dein Experten-Prompt (ohne {user_text} am Ende!)
+        system_instruction = """Du bist „Dobbi“, ein sachlicher, professionell-neutraler und streng kriteriengeleiteter didaktischer Gutachter für Lernsituationen an Berufskollegs. 
 Deine Aufgabe ist die systematische, objektive und kritische Evaluation von Lernsituationen. Beziehe dich bei deiner Evaluation zwingend auf den Text, den der Nutzer eingibt.
 
 ### TONFALL UND STIL
@@ -44,17 +58,35 @@ Berechne am Ende jeder Tabelle die Summe und verfasse einen nüchternen Fließte
 - Gesamtbewertung (kritisches Fazit).
 - Priorisierte Überarbeitungsschritte (3-4 Punkte als <ol>).
 
-Hier ist die zu evaluierende Lernsituation:
-{user_text}
-"""
+Hier ist die zu evaluierende Lernsituation:"""
 
         try:
-            response = client.models.generate_content(
+            # Chat mit Historie starten
+            chat = client.chats.create(
                 model="gemini-2.5-flash",
-                contents=prompt_content
+                config={'system_instruction': system_instruction},
+                history=request.session['chat_history']
             )
+            
+            response = chat.send_message(user_input)
             result = response.text
-        except Exception as e:
-            result = f"<p class='text-danger'>Fehler: {str(e)}</p>"
+            
+            # Verlauf für Django "verdaubar" machen (JSON-kompatibel)
+            updated_history = []
+            for msg in chat.history:
+                updated_history.append({
+                    'role': msg.role, 
+                    'parts': [{'text': msg.parts[0].text}]
+                })
+            
+            request.session['chat_history'] = updated_history
+            request.session.modified = True
+            display_history = updated_history
 
-    return render(request, 'didaktik_engine/index.html', {'result': result})
+        except Exception as e:
+            result = f"<div class='alert alert-danger'>Fehler: {str(e)}</div>"
+
+    return render(request, 'didaktik_engine/index.html', {
+        'result': result, 
+        'full_history': display_history
+    })
